@@ -3,68 +3,47 @@ import shutil
 import copy
 from pypdf import PdfWriter, PdfReader
 
-PATH = 'C:\\Users\\roefri01\\Downloads\\ariel\\oz2\\'
-FILE = 'ozmelech.pdf'
-DIR = 'V'
-SKIP = 0
+PATH = r'C:\Users\roefri01\Downloads\ariel\\'
+FILE = 'l.pdf'
+DIR = 'H'
+SKIP = 1
 
 
-def split_file(filename):
-    pdf_file = PdfReader(open(filename, 'rb'))
-
-    for i in range(SKIP, len(pdf_file.pages)):
-        print(i)
-        output_pdf = PdfWriter()
-        output_pdf.add_page(pdf_file.pages[i])
-        with open(PATH+'output_{}.pdf'.format(str(i).zfill(3)), 'wb') as output_file:
-            output_pdf.write(output_file)
-
-
-def duplicate_pages(path):
-    for filename in os.listdir(path):
-        if 'output_' not in filename:
-            continue
-        print(f'{path} {filename}')
-        shutil.copy2(path+filename, path+filename+'_part1.pdf')
-        shutil.move(path+filename, path+filename+'_part2.pdf')
-
-
-def crop_pages():
-    pass
-
-
-def merge_pages(path):
+def crop_file(path, filename):
+    # open input file, PdfReader
+    input_pdf_file = PdfReader(open(path+filename, 'rb'))
+    # create PdfWriter
     output_pdf = PdfWriter()
-    files = os.listdir(path)
-    files.sort()
-    for filename in files:
-        print(f'Merging {filename}')
-        if 'output_' not in filename:
-            continue
-        # output_pdf.add_page(PdfReader(open(path+filename, 'rb')).pages[0])
-        with open(path+filename, 'rb') as f:
-            page = PdfReader(f).pages[0]
-            if 'part1' in filename:
-                print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
-                if DIR == 'V':
-                    page.mediabox.bottom = page.mediabox.top / 2
-                else:
-                    page.mediabox.left = page.mediabox.right / 2
-                print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
-            else:
-                print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
-                if DIR == 'V':
-                    page.mediabox.top = page.mediabox.top / 2
-                else:
-                    page.mediabox.right = page.mediabox.right / 2
-                print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
-            # page = copy.copy(page)
-            output_pdf.add_page(page)
-        os.remove(path+filename)
+    # loop over pages
 
-    with open(PATH+FILE+'_final.pdf', 'wb') as output_file:
+    for i in range(len(input_pdf_file.pages)):
+        print(f'Processing page {i} of {len(input_pdf_file.pages)}')
+        # add bottom/left page
+        page = input_pdf_file.pages[i]
+        if i < SKIP:
+            output_pdf.add_page(page)
+            continue
+        mb = copy.copy(page.mediabox)  # Save a copy of the original page.mediabox properties
+        # print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
+        if DIR == 'V':
+            page.mediabox.bottom = page.mediabox.top / 2
+        else:
+            page.mediabox.left = page.mediabox.right / 2
+        output_pdf.add_page(page)
+        page.mediabox = copy.copy(mb)  # Restore the mediabox properties
+
+        # add top/right
+        if DIR == 'V':
+            page.mediabox.top = page.mediabox.top / 2
+        else:
+            page.mediabox.right = page.mediabox.right / 2
+        output_pdf.add_page(page)
+
+    # Write output file
+    with open(path + filename + '_final.pdf', 'wb') as output_file:
         output_pdf.write(output_file)
 
+    # Sometimes reading and writing will compress the file
     # reader = PdfReader(PATH+FILE+'_final.pdf')
     # writer = PdfWriter()
     #
@@ -77,7 +56,6 @@ def merge_pages(path):
     #     writer.write(fp)
 
 
-print('Start')
-split_file(PATH+FILE)
-duplicate_pages(PATH)
-merge_pages(PATH)
+crop_file(PATH, FILE)
+
+
