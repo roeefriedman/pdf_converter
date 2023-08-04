@@ -4,13 +4,15 @@ import copy
 from pypdf import PdfWriter, PdfReader
 
 PATH = 'C:\\Users\\roefri01\\Downloads\\ariel\\oz2\\'
-FILE = 'oz.pdf'
+FILE = 'ozmelech.pdf'
+DIR = 'V'
+SKIP = 0
 
 
 def split_file(filename):
     pdf_file = PdfReader(open(filename, 'rb'))
 
-    for i in range(len(pdf_file.pages)):
+    for i in range(SKIP, len(pdf_file.pages)):
         print(i)
         output_pdf = PdfWriter()
         output_pdf.add_page(pdf_file.pages[i])
@@ -44,11 +46,17 @@ def merge_pages(path):
             page = PdfReader(f).pages[0]
             if 'part1' in filename:
                 print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
-                page.mediabox.bottom = page.mediabox.top / 2
+                if DIR == 'V':
+                    page.mediabox.bottom = page.mediabox.top / 2
+                else:
+                    page.mediabox.left = page.mediabox.right / 2
                 print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
             else:
                 print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
-                page.mediabox.top = page.mediabox.top / 2
+                if DIR == 'V':
+                    page.mediabox.top = page.mediabox.top / 2
+                else:
+                    page.mediabox.right = page.mediabox.right / 2
                 print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
             # page = copy.copy(page)
             output_pdf.add_page(page)
@@ -56,6 +64,17 @@ def merge_pages(path):
 
     with open(PATH+FILE+'_final.pdf', 'wb') as output_file:
         output_pdf.write(output_file)
+
+    # reader = PdfReader(PATH+FILE+'_final.pdf')
+    # writer = PdfWriter()
+    #
+    # for page in reader.pages:
+    #     writer.add_page(page)
+    #
+    # writer.add_metadata(reader.metadata)
+    #
+    # with open(PATH+FILE+'_compressed.pdf', "wb") as fp:
+    #     writer.write(fp)
 
 
 print('Start')
