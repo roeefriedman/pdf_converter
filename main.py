@@ -1,15 +1,11 @@
 import os
-import shutil
 import copy
+import sys
 from pypdf import PdfWriter, PdfReader
-
-PATH = r'C:\Users\roefri01\Downloads\ariel\\'
-FILE = 'l.pdf'
-DIR = 'H'
-SKIP = 1
+import argparse
 
 
-def crop_file(path, filename):
+def crop_file(path, filename, direction='V', skip=0):
     # open input file, PdfReader
     input_pdf_file = PdfReader(open(path+filename, 'rb'))
     # create PdfWriter
@@ -20,12 +16,12 @@ def crop_file(path, filename):
         print(f'Processing page {i} of {len(input_pdf_file.pages)}')
         # add bottom/left page
         page = input_pdf_file.pages[i]
-        if i < SKIP:
+        if i < skip:
             output_pdf.add_page(page)
             continue
         mb = copy.copy(page.mediabox)  # Save a copy of the original page.mediabox properties
         # print(f'{page.mediabox.top} {page.mediabox.bottom} {page.mediabox.left} {page.mediabox.right}')
-        if DIR == 'V':
+        if direction == 'v':
             page.mediabox.bottom = page.mediabox.top / 2
         else:
             page.mediabox.left = page.mediabox.right / 2
@@ -33,7 +29,7 @@ def crop_file(path, filename):
         page.mediabox = copy.copy(mb)  # Restore the mediabox properties
 
         # add top/right
-        if DIR == 'V':
+        if direction == 'v':
             page.mediabox.top = page.mediabox.top / 2
         else:
             page.mediabox.right = page.mediabox.right / 2
@@ -56,6 +52,45 @@ def crop_file(path, filename):
     #     writer.write(fp)
 
 
-crop_file(PATH, FILE)
+def handle_args(args):
+    error = False
+    if args.path is None:
+        args.path = './'
+    if not os.path.isdir(args.path):
+        print(f'Directory not found: {args.path}')
+        error = True
+    if args.path[-1] != '/':
+        args.path += '/'
+
+    if args.file is None:
+        print('File not found: None')
+        error = True
+    if not os.path.isfile(args.path + args.file):
+        print(f'File not found: {args.path + args.file}')
+        error = True
+
+    if args.skip_page is None:
+        args.skip_page = '0'
+    if not args.skip_page.isnumeric():
+        print(f'skip_page should be a number: {args.skip_page}')
+        error = True
+
+    if args.direction is None:
+        args.direction = 'v'
+    if args.direction.lower() != 'v' and args.direction.lower() != 'h':
+        print(f'direction can be v or h: {args.direction}')
+        error = True
+
+    if error:
+        sys.exit(1)
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-p', '--path', help='File path')
+parser.add_argument('-f', '--file', help='File name')
+parser.add_argument('-d', '--direction', help='Direction of cropping (v|h)')
+parser.add_argument('-s', '--skip_page', help='number of first pages to skip (default = 0)')
+cl_args = parser.parse_args()
+handle_args(cl_args)
+
+crop_file(cl_args.path, cl_args.file, cl_args.direction.lower(), int(cl_args.skip_page))
